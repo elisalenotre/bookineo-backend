@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: bookineo_php
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html:delegated
+      - composer_cache:/tmp/composer
+    environment:
+      APP_ENV: dev
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: bookineo_nginx
+    ports:
+      - "8080:80"          
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+
+  db:
+    image: mysql:8.0
+    container_name: bookineo_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ecv-bookineo
+      MYSQL_USER: bookineo
+      MYSQL_PASSWORD: bookineo
+    ports:
+      - "3307:3306"        
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # (optionnel) admin Web pour la DB
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8081:80"           
+    environment:
+      PMA_HOST: db
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+  composer_cache:
