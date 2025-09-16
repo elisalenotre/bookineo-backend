@@ -10,30 +10,27 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
-    private UserPasswordHasherInterface $hasher;
-
-    public function __construct(UserPasswordHasherInterface $hasher)
-    {
-        $this->hasher = $hasher;
-    }
+    public function __construct(private UserPasswordHasherInterface $hasher) {}
 
     public function load(ObjectManager $manager): void
     {
-        // un user pour une demo potentielle
+        // user démo
         $user = new User();
-        $user->setEmail('demo2@bookineo.test');
-        $user->setFirstName('Demo2');
-        $user->setLastName('User2');
-        $user->setPassword($this->hasher->hashPassword($user, 'Demo2Pwd!234'));
+        $user->setEmail('demo@bookineo.test');
+        $user->setFirstName('Demo');
+        $user->setLastName('User');
+        $user->setPassword($this->hasher->hashPassword($user, 'DemoPwd!234'));
         $manager->persist($user);
+        $this->addReference('user.demo', $user);
 
-        // quelques livres exemples
+        // 3 livres
         $books = [
             ['The Picture Of Dorian Grey','Oscar Wilde','1890-07-01',5.0,'En très bon état'],
             ['Kitchen','Banana Yoshimoto','1988-01-01',4.0,'Usé mais correct'],
-            ['Ms Ice Sandwich','Mieko Kawakami','2013-01-04',2.0,'Comme neuf'],
+            ['Ms Ice Sandwich','Mieko Kawakami','2013-01-04',6.0,'Comme neuf'],
         ];
 
+        $i = 1;
         foreach ($books as [$title,$author,$date,$price,$desc]) {
             $b = new Book();
             $b->setTitle($title);
@@ -44,9 +41,12 @@ class AppFixtures extends Fixture
             $b->setOwner($user->getEmail());
             $b->setDescription($desc);
             $manager->persist($b);
+
+            // références
+            $this->addReference("book.demo.$i", $b);
+            $i++;
         }
 
         $manager->flush();
     }
 }
-
