@@ -41,7 +41,7 @@ class AuthController extends AbstractController
         return $this->json(['message'=>'Compte créé'], 201);
     }
 
-    #[Route('/login', name:'auth_login', methods:['POST'])]
+#[Route('/login', name:'auth_login', methods:['POST'])]
     public function loginManual(
         Request $req,
         UserRepository $repo,
@@ -51,12 +51,18 @@ class AuthController extends AbstractController
         $data = json_decode($req->getContent(), true) ?? [];
         $email = (string)($data['email'] ?? '');
         $password = (string)($data['password'] ?? '');
+        $remember = !empty($data['remember_me']);
 
         $user = $repo->findOneBy(['email' => $email]);
         if (!$user || !$hasher->isPasswordValid($user, $password)) {
             return $this->json(['error' => 'Identifiants invalides'], 401);
         }
-        return $this->json(['token' => $jwt->create($user)]);
+
+        $ttl = $remember ? 60*60*24*14 : 60*60;
+
+        $token = $jwt->createFromPayload($user, ['exp' => time() + $ttl]);
+
+        return $this->json(['token' => $token, 'expires_in' => $ttl]);
     }
 
 }
