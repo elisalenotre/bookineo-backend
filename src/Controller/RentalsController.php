@@ -15,6 +15,7 @@ class RentalsController extends AbstractController
     #[Route('', methods:['POST'])]
     public function rent(Request $req, EM $em)
     {
+        $this->denyAccessUnlessGranted('ROLE_USER');
         $data = json_decode($req->getContent(), true) ?? [];
         /** @var Book $book */
         $book = $em->getRepository(Book::class)->find((int)$data['book_id']);
@@ -25,6 +26,7 @@ class RentalsController extends AbstractController
         $r->setBook($book);
         $r->setRenterFirstName($data['renter_first_name']);
         $r->setRenterLastName($data['renter_last_name']);
+        $r->setRenterEmail($this->getUser()->getUserIdentifier());
         $r->setStartDate(new \DateTime($data['start_date']));
         $duration = (int)$data['duration_days'];
         $startDate = $r->getStartDate();
@@ -40,6 +42,7 @@ class RentalsController extends AbstractController
     #[Route('/{id}/return', methods:['POST'])]
     public function returnBook(int $id, Request $req, EM $em, RentalRepository $repo)
     {
+        $this->denyAccessUnlessGranted('ROLE_USER');
         $r = $repo->find($id);
         if (!$r) return $this->json(['error'=>'Location introuvable'],404);
         $data = json_decode($req->getContent(), true) ?? [];
@@ -55,13 +58,34 @@ class RentalsController extends AbstractController
     #[Route('', methods:['GET'])]
     public function history(Request $req, RentalRepository $repo)
     {
-        $q = $req->query; $qb = $repo->createQueryBuilder('r')->join('r.book','b');
+        $this->denyAccessUnlessGranted('ROLE_USER');
+        $q = $req->query;
+        $qb = $repo->createQueryBuilder('r')
+            ->join('r.book','b')
+            ->addSelect('PARTIAL b.{id,title,status}')
+            ->orderBy('r.startDate','DESC');
+
+        if ($q->get('mine')) {
+            $qb->andWhere('r.renterEmail = :me')->setParameter('me', $this->getUser()->getUserIdentifier());
+        }
+        if ($q->get('active')) {
+            $qb->andWhere('r.returnDate IS NULL');
+        }
         if ($q->get('book_id')) $qb->andWhere('b.id = :bid')->setParameter('bid',(int)$q->get('book_id'));
-        if ($q->get('renter'))  $qb->andWhere('(r.renterFirstName LIKE :r OR r.renterLastName LIKE :r)')->setParameter('r','%'.$q->get('renter').'%');
-        if ($q->get('from'))    $qb->andWhere('r.startDate >= :from')->setParameter('from', new \DateTime($q->get('from')));
-        if ($q->get('to'))      $qb->andWhere('r.startDate <= :to')->setParameter('to', new \DateTime($q->get('to')));
+
         $rows = $qb->getQuery()->getArrayResult();
-        return $this->json($rows);
+
+        $out = array_map(fn($r)=>[
+            'id'         => $r['id'],
+            'book'       => ['id'=>$r['book']['id'], 'title'=>$r['book']['title'], 'status'=>$r['book']['status']],
+            'start_date' => $r['startDate'] instanceof \DateTimeInterface ? $r['startDate']->format('Y-m-d') : $r['startDate'],
+            'due_date'   => $r['dueDate']   instanceof \DateTimeInterface ? $r['dueDate']->format('Y-m-d')   : $r['dueDate'],
+            'return_date'=> $r['returnDate']? ($r['returnDate'] instanceof \DateTimeInterface ? $r['returnDate']->format('Y-m-d') : $r['returnDate']) : null,
+            'comment'    => $r['comment'] ?? null,
+        ], $rows);
+
+        return $this->json(['data'=>$out]);
     }
+
 }
 
