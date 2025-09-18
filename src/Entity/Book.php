@@ -33,6 +33,9 @@ class Book
     #[ORM\Column(type:"string", length:255, nullable:true)]
     private ?string $description = null;
 
+    #[ORM\Column(length:100, nullable:true)]
+    private ?string $genre = null;
+
     // --- getters / setters ---
     public function getId(): ?int { return $this->id; }
 
@@ -56,4 +59,7 @@ class Book
 
     public function getDescription(): ?string { return $this->description; }
     public function setDescription(?string $v): self { $this->description = $v; return $this; }
+
+    public function getGenre(): ?string { return $this->genre; }
+    public function setGenre(?string $genre): self { $this->genre = $genre; return $this; }
 }
