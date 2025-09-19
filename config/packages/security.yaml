@@ -33,7 +33,9 @@ security:
     - { path: ^/api/auth/login,    roles: PUBLIC_ACCESS }
     - { path: ^/api/books,         methods: [GET, OPTIONS], roles: PUBLIC_ACCESS }
     - { path: ^/api/books/genres,  methods: [GET, OPTIONS], roles: PUBLIC_ACCESS }
-    - { path: ^/api/books/\d+$, methods: [PUT, OPTIONS], roles: PUBLIC_ACCESS }
+    - { path: ^/api/books/\d+$, methods: [PUT, OPTIONS], roles: IS_AUTHENTICATED_FULLY }
     - { path: ^/api/rentals, methods: [PUT, OPTIONS], roles: PUBLIC_ACCESS}
     - { path: ^/api/books/\d+/(rent|return)$, roles: PUBLIC_ACCESS } 
     - { path: ^/api,               roles: IS_AUTHENTICATED_FULLY }
+    - { path: ^/api/books/\d+$, methods: [DELETE, PUT, PATCH, POST OPTIONS], roles: IS_AUTHENTICATED_FULLY }
+
