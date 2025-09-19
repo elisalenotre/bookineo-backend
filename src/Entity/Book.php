@@ -36,6 +36,22 @@ class Book
     #[ORM\Column(length:100, nullable:true)]
     private ?string $genre = null;
 
+    // qui a loué (email)
+    #[ORM\Column(type: 'string', length: 320, nullable: true)]
+    private ?string $renterEmail = null;
+
+    // date de début de location
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $rentedAt = null;
+
+    // date de retour
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $returnedAt = null;
+
+    // commentaire de restitution (facultatif)
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $lastReturnComment = null;
+
     // --- getters / setters ---
     public function getId(): ?int { return $this->id; }
 
@@ -62,4 +78,15 @@ class Book
 
     public function getGenre(): ?string { return $this->genre; }
     public function setGenre(?string $genre): self { $this->genre = $genre; return $this; }
+    public function getRenterEmail(): ?string { return $this->renterEmail; }
+    public function setRenterEmail(?string $renterEmail): self { $this->renterEmail = $renterEmail; return $this; }
+
+    public function getRentedAt(): ?\DateTimeInterface { return $this->rentedAt; }
+    public function setRentedAt(?\DateTimeInterface $rentedAt): self { $this->rentedAt = $rentedAt; return $this; }
+
+    public function getReturnedAt(): ?\DateTimeInterface { return $this->returnedAt; }
+    public function setReturnedAt(?\DateTimeInterface $returnedAt): self { $this->returnedAt = $returnedAt; return $this; }
+
+    public function getLastReturnComment(): ?string { return $this->lastReturnComment; }
+    public function setLastReturnComment(?string $lastReturnComment): self { $this->lastReturnComment = $lastReturnComment; return $this; }
 }
