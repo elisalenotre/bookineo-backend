@@ -35,7 +35,7 @@ class MessageController extends AbstractController
             'id'      => $m['id'],
             'from'    => $m['senderEmail'],
             'to'      => $m['receiverEmail'],
-            'date'    => $this->fmtDate($m['createdAt']),            // ← patch
+            'date'    => $this->fmtDate($m['createdAt']),
             'preview' => mb_strimwidth($m['content'], 0, 80, '…'),
             'is_read' => !empty($m['readAt']),
         ], $rows);
@@ -49,7 +49,6 @@ class MessageController extends AbstractController
         $me = $this->getUser()->getUserIdentifier();
         $rows = $repo->findLastByCorrespondent($me);
 
-        // supporte la version SQL (snake_case) OU Doctrine (camelCase)
         $data = array_map(function($m) use ($me) {
             $sender   = $m['sender_email']   ?? $m['senderEmail']   ?? null;
             $receiver = $m['receiver_email'] ?? $m['receiverEmail'] ?? null;
@@ -57,13 +56,12 @@ class MessageController extends AbstractController
             $readAt   = $m['read_at']        ?? $m['readAt']        ?? null;
             $other    = $sender === $me ? $receiver : $sender;
 
-            // non-lu uniquement si c'est adressé à moi ET readAt null
             $isRead = !($receiver === $me && empty($readAt));
 
             return [
                 'id'           => $m['id'],
                 'with'         => $other,
-                'last_date'    => $this->fmtDate($created),          // ← patch
+                'last_date'    => $this->fmtDate($created),
                 'last_preview' => mb_strimwidth($m['content'], 0, 80, '…'),
                 'is_read'      => $isRead,
             ];

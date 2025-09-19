@@ -38,7 +38,7 @@ class Rental
     private string $renterEmail;
 
 
-    // -------- getters / setters ----------
+    // --- getters / setters ---
     public function getId(): ?int { return $this->id; }
 
     public function getBook(): Book { return $this->book; }

@@ -23,7 +23,6 @@ class AuthController extends AbstractController
         $first = $data['first_name'] ?? null;
         $last  = $data['last_name'] ?? null;
 
-        // règles sécurité simples (cf. cahier des charges)
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $this->json(['error'=>'Email invalide'], 400);
         }

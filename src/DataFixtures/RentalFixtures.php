@@ -17,7 +17,6 @@ class RentalFixtures extends Fixture implements DependentFixtureInterface
         /** @var Book $book2 */
         $book2 = $this->getReference('book.demo.2', Book::class);
 
-        // Location EN COURS (book1 → status = rented)
         $r1 = new Rental();
         $r1->setBook($book1);
         $r1->setRenterFirstName('Alice');
@@ -29,7 +28,6 @@ class RentalFixtures extends Fixture implements DependentFixtureInterface
         $book1->setStatus('rented');
         $manager->persist($r1);
 
-        // Location TERMINÉE (book2 → redevenu available)
         $r2 = new Rental();
         $r2->setBook($book2);
         $r2->setRenterFirstName('Bob');
@@ -46,7 +44,6 @@ class RentalFixtures extends Fixture implements DependentFixtureInterface
         $manager->flush();
     }
 
-    // garantit que AppFixtures (books) est exécutée avant
     public function getDependencies(): array
     {
         return [AppFixtures::class];

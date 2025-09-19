@@ -28,7 +28,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type:"string", length:255)]
     private string $password;
 
-    // --- colonnes d'audit présentes en base ---
     #[ORM\Column(name:"created_at", type:"datetime", nullable:true)]
     private ?\DateTimeInterface $createdAt = null;
 
@@ -41,7 +40,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name:"updated_by", type:"string", length:100, nullable:true)]
     private ?string $updatedBy = null;
 
-    // --- security ---
     public function getId(): ?int { return $this->id; }
     public function getUserIdentifier(): string { return $this->email; }
     public function getRoles(): array { return ['ROLE_USER']; }

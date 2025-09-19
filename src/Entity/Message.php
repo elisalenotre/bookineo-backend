@@ -37,7 +37,7 @@ class Message
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    // getters/setters
+    // --- getters / setters ---
     public function getId(): ?int { return $this->id; }
 
     public function getSenderEmail(): string { return $this->senderEmail; }

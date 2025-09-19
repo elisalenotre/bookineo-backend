@@ -14,7 +14,6 @@ class AppFixtures extends Fixture
 
     public function load(ObjectManager $manager): void
     {
-        // user démo
         $user = new User();
         $user->setEmail('demo@bookineo.test');
         $user->setFirstName('Demo');
@@ -23,7 +22,6 @@ class AppFixtures extends Fixture
         $manager->persist($user);
         $this->addReference('user.demo', $user);
 
-        // 3 livres
         $books = [
             ['The Picture Of Dorian Grey','Oscar Wilde','1890-07-01',5.0,'En très bon état'],
             ['Kitchen','Banana Yoshimoto','1988-01-01',4.0,'Usé mais correct'],
@@ -42,7 +40,6 @@ class AppFixtures extends Fixture
             $b->setDescription($desc);
             $manager->persist($b);
 
-            // références
             $this->addReference("book.demo.$i", $b);
             $i++;
         }

@@ -37,14 +37,12 @@ class UsersController extends AbstractController
         if (array_key_exists('first_name', $data)) $user->setFirstName($data['first_name'] ?? '');
         if (array_key_exists('last_name',  $data)) $user->setLastName($data['last_name'] ?? '');
 
-        // <-- conversion sûre de YYYY-MM-DD en DateTimeImmutable
         if (array_key_exists('birth_date', $data)) {
             $bd = $data['birth_date'];
             if ($bd === null || $bd === '') {
                 $user->setBirthDate(null);
             } else {
                 $d = \DateTimeImmutable::createFromFormat('Y-m-d', substr((string)$bd, 0, 10));
-                // si parsing KO, d peut être false → on ignore ou on renvoie 400
                 if ($d === false) {
                     return $this->json(['error' => 'Format de date invalide (attendu YYYY-MM-DD)'], 400);
                 }
