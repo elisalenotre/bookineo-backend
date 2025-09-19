@@ -23,6 +23,7 @@ class BooksController extends AbstractController
         if ($q->get('status'))  $qb->andWhere('b.status = :s')->setParameter('s',$q->get('status'));
         if ($q->get('price_min') !== null) $qb->andWhere('b.price >= :pmin')->setParameter('pmin',(float)$q->get('price_min'));
         if ($q->get('price_max') !== null) $qb->andWhere('b.price <= :pmax')->setParameter('pmax',(float)$q->get('price_max'));
+        if ($q->get('genre'))  $qb->andWhere('b.genre = :g')->setParameter('g', $q->get('genre'));
 
         $page = max(1,(int)$q->get('page',1)); $limit = max(1,(int)$q->get('limit',10));
         $qb->setFirstResult(($page-1)*$limit)->setMaxResults($limit);
@@ -43,12 +44,14 @@ class BooksController extends AbstractController
         $b->setPrice((float)($data['price'] ?? 0));
         $b->setOwner($this->getUser()->getUserIdentifier()); // owner = email
         $b->setDescription($data['description'] ?? null);
+        $b->setGenre($data['genre'] ?? null);
+        
 
         $em->persist($b); $em->flush();
         return $this->json(['id'=>$b->getId()], 201);
     }
 
-    #[Route('/{id}', methods:['GET'])]
+    #[Route('/{id<\d+>}', methods:['GET'])]
     public function detail(Book $book) { return $this->json($book); }
 
     #[Route('/{id}', methods:['PUT'])]
@@ -62,6 +65,7 @@ class BooksController extends AbstractController
         if (isset($data['status'])) $book->setStatus($data['status']);
         if (isset($data['description'])) $book->setDescription($data['description']);
         if (isset($data['publication_date'])) $book->setPublicationDate(new \DateTime($data['publication_date']));
+        if (isset($data['genre'])) $book->setGenre($data['genre']);
         $em->flush();
         return $this->json(['message'=>'Livre mis à jour']);
     }
@@ -85,12 +89,27 @@ class BooksController extends AbstractController
             fputcsv($out, ['id','title','author','publication_date','status','price','owner','description']);
             foreach ($rows as $r) fputcsv($out, [
                 $r['id'], $r['title'], $r['author'],
-                $r['publicationDate'] ?? null, $r['status'], $r['price'], $r['owner'], $r['description'] ?? ''
+                $r['publicationDate'] ?? null, $r['status'], $r['price'], $r['owner'], $r['genre'] ?? '', $r['description'] ?? ''
             ]);
             fclose($out);
         });
         $response->headers->set('Content-Type','text/csv');
         $response->headers->set('Content-Disposition','attachment; filename="books.csv"');
         return $response;
+    }
+
+    #[Route('/genres', methods:['GET'])]
+    public function genres(BookRepository $repo)
+    {
+        $rows = $repo->createQueryBuilder('b')
+            ->select('DISTINCT b.genre AS genre')
+            ->where('b.genre IS NOT NULL')
+            ->andWhere("b.genre <> ''")
+            ->orderBy('b.genre', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+
+        $genres = array_map(fn($r) => $r['genre'], $rows);
+        return $this->json(['genres' => $genres]);
     }
 }
