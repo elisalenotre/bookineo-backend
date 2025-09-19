@@ -4,6 +4,7 @@ namespace App\Controller;
 use App\Entity\Book;
 use App\Repository\BookRepository;
 use Doctrine\ORM\EntityManagerInterface as EM;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Annotation\Route;
@@ -54,7 +55,7 @@ class BooksController extends AbstractController
     #[Route('/{id<\d+>}', methods:['GET'])]
     public function detail(Book $book) { return $this->json($book); }
 
-    #[Route('/{id}', methods:['PUT'])]
+    #[Route('/{id<\d+>}', methods:['PUT'])]
     public function update(Book $book, Request $req, EM $em)
     {
         $this->denyAccessUnlessGranted('ROLE_USER');
@@ -70,7 +71,7 @@ class BooksController extends AbstractController
         return $this->json(['message'=>'Livre mis à jour']);
     }
 
-    #[Route('/{id}', methods:['DELETE'])]
+    #[Route('/{id<\d+>}', methods:['DELETE'])]
     public function delete(Book $book, EM $em)
     {
         $em->remove($book); $em->flush();
@@ -111,5 +112,84 @@ class BooksController extends AbstractController
 
         $genres = array_map(fn($r) => $r['genre'], $rows);
         return $this->json(['genres' => $genres]);
+    }
+
+    #[Route('/{id<\d+>}/rent', methods:['POST'])]
+    public function rent(Book $book, Request $req, EM $em)
+    {
+        if ($book->getStatus() === 'rented') {
+            return $this->json(['error' => 'Déjà loué'], 409);
+        }
+        $data = json_decode($req->getContent(), true) ?? [];
+
+        $start = !empty($data['start_date']) ? new \DateTime($data['start_date']) : new \DateTime();
+        $renterEmail = $data['renter_email'] ?? $this->getUser()?->getUserIdentifier() ?? 'anon@local.test';
+
+        $book->setStatus('rented');
+        $book->setRenterEmail($renterEmail);
+        $book->setRentedAt($start);
+        $book->setReturnedAt(null);
+        $book->setLastReturnComment(null);
+
+        $em->flush();
+
+        return $this->json(['message' => 'Livre loué']);
+    }
+
+    #[Route('/{id<\d+>}/return', methods:['POST'])]
+    public function returnBook(Book $book, Request $req, EM $em)
+    {
+        if ($book->getStatus() !== 'rented') {
+            return $this->json(['error' => 'Livre non loué'], 409);
+        }
+        $data = json_decode($req->getContent(), true) ?? [];
+
+        $ret = !empty($data['return_date']) ? new \DateTime($data['return_date']) : new \DateTime();
+        $comment = $data['comment'] ?? null;
+
+        $book->setStatus('available');
+        $book->setReturnedAt($ret);
+        $book->setLastReturnComment($comment);
+
+        $em->flush();
+
+        return $this->json(['message' => 'Livre restitué']);
+    }
+
+    #[Route('/history', methods: ['GET'])]
+    public function history(Request $req, BookRepository $repo): JsonResponse
+    {
+        $q = $req->query;
+
+        $qb = $repo->createQueryBuilder('b')
+            ->select('b.id', 'b.title', 'b.owner', 'b.renterEmail', 'b.rentedAt', 'b.returnedAt')
+            ->where('b.rentedAt IS NOT NULL OR b.returnedAt IS NOT NULL');
+
+        if ($q->get('q'))      $qb->andWhere('b.title LIKE :q')->setParameter('q', '%'.$q->get('q').'%');
+        if ($q->get('owner'))  $qb->andWhere('b.owner = :o')->setParameter('o', $q->get('owner'));
+        if ($q->get('renter')) $qb->andWhere('b.renterEmail = :r')->setParameter('r', $q->get('renter'));
+
+        $page  = max(1, (int) $q->get('page', 1));
+        $limit = max(1, (int) $q->get('limit', 100));
+        $qb->setFirstResult(($page-1)*$limit)->setMaxResults($limit)
+        ->orderBy('b.rentedAt', 'DESC');
+
+        $rows = $qb->getQuery()->getArrayResult();
+
+        $data = array_map(function(array $r) {
+            $rentedAt   = isset($r['rentedAt'])   && $r['rentedAt']   instanceof \DateTimeInterface ? $r['rentedAt']->format('Y-m-d')   : null;
+            $returnedAt = isset($r['returnedAt']) && $r['returnedAt'] instanceof \DateTimeInterface ? $r['returnedAt']->format('Y-m-d') : null;
+
+            return [
+                'id'          => $r['id'],
+                'title'       => $r['title'],
+                'owner'       => $r['owner'] ?? null,
+                'renter'      => $r['renterEmail'] ?? null,
+                'rented_at'   => $rentedAt,
+                'returned_at' => $returnedAt,
+            ];
+        }, $rows);
+
+        return $this->json(['data' => $data, 'page' => $page, 'limit' => $limit]);
     }
 }

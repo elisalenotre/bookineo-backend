@@ -35,4 +35,5 @@ security:
     - { path: ^/api/books/genres,  methods: [GET, OPTIONS], roles: PUBLIC_ACCESS }
     - { path: ^/api/books/\d+$, methods: [PUT, OPTIONS], roles: PUBLIC_ACCESS }
     - { path: ^/api/rentals, methods: [PUT, OPTIONS], roles: PUBLIC_ACCESS}
+    - { path: ^/api/books/\d+/(rent|return)$, roles: PUBLIC_ACCESS } 
     - { path: ^/api,               roles: IS_AUTHENTICATED_FULLY }
