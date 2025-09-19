@@ -19,6 +19,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name:"last_name", type:"string", length:255, nullable:true)]
     private ?string $lastName = null;
 
+    #[ORM\Column(type: 'date', nullable: true)]
+    private ?\DateTimeInterface $birthDate = null;
+
     #[ORM\Column(type:"string", length:255, unique:true)]
     private string $email;
 
@@ -52,6 +55,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setFirstName(?string $v): self { $this->firstName=$v; return $this; }
     public function getLastName(): ?string { return $this->lastName; }
     public function setLastName(?string $v): self { $this->lastName=$v; return $this; }
+
+    public function getBirthDate(): ?\DateTimeInterface { return $this->birthDate; }
+    public function setBirthDate(?\DateTimeInterface $v): self { $this->birthDate = $v; return $this; }
 
     public function getCreatedAt(): ?\DateTimeInterface { return $this->createdAt; }
     public function setCreatedAt(?\DateTimeInterface $v): self { $this->createdAt=$v; return $this; }

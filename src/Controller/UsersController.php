@@ -3,6 +3,7 @@ namespace App\Controller;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface as EM;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,16 +26,39 @@ class UsersController extends AbstractController
     }
 
     #[Route('/me', methods:['PUT'])]
-    public function updateMe(Request $req, EM $em): \Symfony\Component\HttpFoundation\JsonResponse
+    public function updateMe(Request $req, EM $em): JsonResponse
     {
-        $u = $this->getUser();
-        if (!$u instanceof \App\Entity\User) {
-            return $this->json(['error' => 'User entity not found'], 400);
-        }
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
         $data = json_decode($req->getContent(), true) ?? [];
-        if (isset($data['first_name'])) $u->setFirstName($data['first_name']);
-        if (isset($data['last_name']))  $u->setLastName($data['last_name']);
+
+        if (array_key_exists('first_name', $data)) $user->setFirstName($data['first_name'] ?? '');
+        if (array_key_exists('last_name',  $data)) $user->setLastName($data['last_name'] ?? '');
+
+        // <-- conversion sûre de YYYY-MM-DD en DateTimeImmutable
+        if (array_key_exists('birth_date', $data)) {
+            $bd = $data['birth_date'];
+            if ($bd === null || $bd === '') {
+                $user->setBirthDate(null);
+            } else {
+                $d = \DateTimeImmutable::createFromFormat('Y-m-d', substr((string)$bd, 0, 10));
+                // si parsing KO, d peut être false → on ignore ou on renvoie 400
+                if ($d === false) {
+                    return $this->json(['error' => 'Format de date invalide (attendu YYYY-MM-DD)'], 400);
+                }
+                $user->setBirthDate($d);
+            }
+        }
+
         $em->flush();
-        return $this->json(['message'=>'Profil mis à jour']);
+
+        return $this->json([
+            'first_name'  => $user->getFirstName(),
+            'last_name'   => $user->getLastName(),
+            'birth_date'  => $user->getBirthDate()?->format('Y-m-d'),
+            'email'       => $user->getUserIdentifier(),
+        ]);
     }
 }
