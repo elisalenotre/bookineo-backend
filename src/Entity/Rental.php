@@ -34,6 +34,10 @@ class Rental
     #[ORM\Column(type: "string", length: 255, nullable: true)]
     private ?string $comment = null;
 
+    #[ORM\Column(length: 180, nullable: true)]
+    private string $renterEmail;
+
+
     // -------- getters / setters ----------
     public function getId(): ?int { return $this->id; }
 
@@ -57,4 +61,7 @@ class Rental
 
     public function getComment(): ?string { return $this->comment; }
     public function setComment(?string $v): self { $this->comment = $v; return $this; }
+
+   public function getRenterEmail(): ?string { return $this->renterEmail; }
+    public function setRenterEmail(?string $renterEmail): self { $this->renterEmail = $renterEmail; return $this; }
 }
